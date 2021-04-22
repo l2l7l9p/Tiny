@@ -10,7 +10,7 @@
 • Statement ::= SimpleStmt | Block | IfStmt | ForStmt
 • SimpleStmt ::= LocalVarDecl | AssignStmt | ReturnStmt | WriteStmt | ReadStmt | ';'
 • LocalVarDecl ::= Type, Id, ';'
-• （省略AssignStmt, ReturnStmt, WriteStmt, ReadStmt 的描述，与Tiny 相同）
+• （AssignStmt, ReturnStmt, WriteStmt, ReadStmt are the same as in Tiny）
 • IfStmt ::= 'IF', '(', Expression, ')', Statement, ['ELSE', Statement]
 • ForStmt ::= 'FOR', '(', Statement, Expression, ';', Statement, ')', Statement
 • Expression ::= PrimExpr | (Expression, ('+' | '-' | '*' | '/' | '==' | '!=' | '<' | '<='), Expression)
