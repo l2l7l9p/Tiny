@@ -1,0 +1,19 @@
+/** this is a comment line in the sample program **/
+INT f2(INT x, INT y ) 
+ BEGIN 
+    INT z;
+    INT i;
+    z := x*x - y*y;
+    FOR (i:=1; i<=z; i:=i+1;);
+    RETURN z; 
+ END
+
+INT MAIN main()
+BEGIN
+	REAL x;
+	x:=1.2;
+	IF (x==1)
+		IF (y==f2(x))
+			WRITE(3,"stdout");
+		ELSE READ(x,"stdout");
+END
