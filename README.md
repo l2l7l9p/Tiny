@@ -9,3 +9,4 @@ flex & bison tutorial: https://blog.csdn.net/rzO_KQP_Orz/article/details/1158028
 ### Functions Updates
 
 2021.4.22 : syntax analyze & draww syntax tree
+format: `./tiny <TinyCodeFile>`
