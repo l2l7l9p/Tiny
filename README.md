@@ -2,9 +2,19 @@
 
 A simple compiler for language Tiny+
 
-### Definition
+### Language Definition
 
 see `Tiny+EBNF.md`
+
+### Usage
+
+```
+Usage: ./tiny <file> [options]
+Options:
+  -d            Print syntax tree
+  -h            Print help
+  -o <file>     Place the output into <file>
+```
 
 ### Tutorials (in Chinese)
 
