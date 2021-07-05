@@ -12,8 +12,10 @@ INT MAIN main()
 BEGIN
 	REAL x;
 	x:=1.2;
+	INT y;
 	IF (x==1)
-		IF (y==f2(x))
+		IF (x==f2(2,y))
 			WRITE(3,"stdout");
 		ELSE READ(x,"stdout");
+	/**RETURN x;**/
 END

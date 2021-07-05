@@ -1,13 +1,15 @@
-# Tiny
+# Tiny+
 
 A simple compiler for language Tiny+
 
-### Tutorials
+### Definition
 
-flex & bison tutorial: https://blog.csdn.net/rzO_KQP_Orz/article/details/115802813
+see `Tiny+EBNF.md`
 
-### Functions Updates
+### Tutorials (in Chinese)
 
-**2021.4.22** : syntax analyze & draw syntax tree
+phase1: syntax analyze & draw syntax tree, using flex and bison
 
-format: `./tiny <TinyCodeFile>`
+https://blog.csdn.net/rzO_KQP_Orz/article/details/115802813
+
+phase2: semantic analyze & 3-address code

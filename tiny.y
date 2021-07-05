@@ -8,6 +8,7 @@ extern int yylineno, yynerrs;
 void yyerror(const char* s);
 
 node *root;
+int lastyylineno=0;
 %}
 
 %define api.value.type union
@@ -20,9 +21,9 @@ node *root;
 %token IF ELSE FOR WRITE READ RETURN tkBEGIN END MAIN INT REAL CHAR Assign ":=" Equal "==" NEqual "!=" LE "<="
 
 %type<node_Program*> Program
-%type<node_MethodDecls*> MethodDecls MethodDeclsWithMain
-%type<node_MethodDecl*> MethodDecl MethodDeclMain
-%type<node_FormalParams*> FormalParams
+%type<node_MethodDecls*> MethodDecls
+%type<node_MethodDecl*> MethodDecl
+%type<node_FormalParams*> FormalParams NonEmptyFormalParams
 %type<node_FormalParam*> FormalParam
 %type<node_Type*> Type
 %type<node_Statements*> Statements Block
@@ -35,7 +36,7 @@ node *root;
 %type<node_WriteStmt*> WriteStmt
 %type<node_ReadStmt*> ReadStmt
 %type<node_Expression*> Expression PrimExpr
-%type<node_ActualParams*> ActualParams
+%type<node_ActualParams*> ActualParams NonEmptyActualParams
 %type<node_Id*> Id
 
 %nonassoc "==" "!=" '<' "<="
@@ -44,31 +45,31 @@ node *root;
 %nonassoc UMINUS
 
 %destructor{} <int> <double> <char*>
-%destructor{ if (yynerrs) clear($$); } <*>
+%destructor{
+	if (yynerrs!=lastyylineno) clear($$);
+	lastyylineno=yynerrs;
+} <*>
 
 %%
 
 Program:
-	MethodDeclsWithMain {$$ = new node_Program(1,$1); root=$$;}
+	MethodDecls {$$ = new node_Program(1,$1); root=$$;}
 	;
 MethodDecls:
-	  MethodDecl {$$ = new node_MethodDecls(1,$1);}
+	  {$$ = new node_MethodDecls(0);}
 	| MethodDecl MethodDecls {$$ = new node_MethodDecls(2,$1,$2);}
 	;
-MethodDeclsWithMain:
-	  MethodDeclMain {$$ = new node_MethodDecls(1,$1);}
-	| MethodDeclMain MethodDecls {$$ = new node_MethodDecls(2,$1,$2);}
-	| MethodDecl MethodDeclsWithMain {$$ = new node_MethodDecls(2,$1,$2);}
-	;
 MethodDecl:
-	Type Id '(' FormalParams ')' Block {$$ = new node_MethodDecl(0,4,$1,$2,$4,$6);}
+	  Type Id '(' FormalParams ')' Block {$$ = new node_MethodDecl(0,4,$1,$2,$4,$6);}
+	| Type MAIN Id '(' FormalParams ')' Block {$$ = new node_MethodDecl(1,4,$1,$3,$5,$7);}
 	;
-MethodDeclMain:
-	Type MAIN Id '(' FormalParams ')' Block {$$ = new node_MethodDecl(1,4,$1,$3,$5,$7);}
+FormalParams:
+	  {$$ = new node_FormalParams(0);}
+	| NonEmptyFormalParams {$$ = $1;}
 	;
-FormalParams: {$$ = nullptr;}
-	| FormalParam {$$ = new node_FormalParams(1,$1);}
-	| FormalParam ',' FormalParams {$$ = new node_FormalParams(2,$1,$3);}
+NonEmptyFormalParams:
+	  FormalParam {$$ = new node_FormalParams(1,$1);}
+	| FormalParam ',' NonEmptyFormalParams {$$ = new node_FormalParams(2,$1,$3);}
 	;
 FormalParam:
 	Type Id {$$ = new node_FormalParam(2,$1,$2);}
@@ -78,7 +79,7 @@ Type:
 	| REAL {$$ = new node_Type(V_REAL);}
 	| CHAR {$$ = new node_Type(V_CHAR);}
 	;
-Statements: {$$ = nullptr;}
+Statements: {$$ = new node_Statements(0);}
 	| Statement Statements {$$ = new node_Statements(2,$1,$2);}
 	;
 Block:
@@ -116,13 +117,13 @@ ElseStmt: {$$ = nullptr;}
 	| ELSE Statement {$$ = $2;}
 	;
 ForStmt:
-	FOR '(' Statement Expression ';' Statement ')' Statement {$$ = new node_ForStmt(4,$3,$4,$6,$8);}
+	FOR '(' SimpleStmt Expression ';' SimpleStmt ')' Statement {$$ = new node_ForStmt(4,$3,$4,$6,$8);}
 	;
 WriteStmt:
 	WRITE '(' Expression ',' QString ')' ';' {$$ = new node_WriteStmt($5,1,$3);}
 	;
 ReadStmt:
-	READ '(' Expression ',' QString ')' ';' {$$ = new node_ReadStmt($5,1,$3);}
+	READ '(' Id ',' QString ')' ';' {$$ = new node_ReadStmt($5,1,$3);}
 	;
 Expression:
 	  PrimExpr {$$ = $1;}
@@ -139,21 +140,25 @@ Expression:
 	;
 PrimExpr:
 	  Number_Integer {
-		DataType data;
+		Data_t data;
 		data.d_int=$1;
 		$$ = new node_Expression('N',OP_GET_VALUE,data,V_INT);
 		}
 	| Number_Float {
-		DataType data;
+		Data_t data;
 		data.d_float=$1;
 		$$ = new node_Expression('N',OP_GET_VALUE,data,V_REAL);
 		}
 	| Id {$$ = new node_Expression(OP_GET_VAR,1,$1);}
 	| Id '(' ActualParams ')' {$$ = new node_Expression(OP_CALL_FUNC,2,$1,$3);}
 	;
-ActualParams: {$$ = nullptr;}
-	| Expression {$$ = new node_ActualParams(1,$1);}
-	| Expression ',' ActualParams {$$ = new node_ActualParams(2,$1,$3);}
+ActualParams:
+	  {$$ = new node_ActualParams(0);}
+	| NonEmptyActualParams {$$ = $1;}
+	;
+NonEmptyActualParams:
+	  Expression {$$ = new node_ActualParams(1,$1);}
+	| Expression ',' NonEmptyActualParams {$$ = new node_ActualParams(2,$1,$3);}
 	;
 Id:
 	IdString {$$ = new node_Id(string($1));}
