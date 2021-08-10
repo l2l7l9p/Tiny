@@ -6,6 +6,25 @@ INT f2(INT x, INT y )
     z := x*x - y*y;
     FOR (i:=1; i<=z; i:=i+1;);
     RETURN z; 
+	IF (z==1) BEGIN
+		IF (i==1) BEGIN
+			IF (y==2) BEGIN
+			END
+			BEGIN
+			END
+			BEGIN
+				BEGIN
+				END
+			END
+		END
+		BEGIN
+			BEGIN
+			END
+		END
+		BEGIN
+		END
+	END
+	RETURN 2;
  END
 
 INT MAIN main()
@@ -17,5 +36,5 @@ BEGIN
 		IF (x==f2(2,y))
 			WRITE(3,"stdout");
 		ELSE READ(x,"stdout");
-	/**RETURN x;**/
+	RETURN x;
 END

@@ -29,6 +29,14 @@ void add_codes(Codes &a,Codes &b) {
 	b.clear();
 }
 
+string type_conversion(Var_t orgType,Var_t newType,string expName,Codes &codes) {
+	if (orgType!=newType) {
+		codes.push_back(make_pair("","%t_"+to_string(node::varCnt++)+" = ("+rvVarType[newType]+") "+expName));
+		expName="%t_"+to_string(node::varCnt-1);
+	}
+	return expName;
+}
+
 // ****** node ******
 
 void node::simplify() {
@@ -90,7 +98,7 @@ string node_MethodDecl::get_type_info() {return "MethodDecl";}
 
 bool node_MethodDecl::generate_3addr_code() {
 	bool err=0;
-	symbolTab.push_back(SymbolTabType());							// local label
+	symbolTab.push_back(SymbolTabType());						// local label
 	symbolTab.back()["%EOCF"]=Symbol(SB_LABEL,"EOCF_"+to_string(EOCFCnt++));	// 'End Of Control Flow' label
 	symbolTab.back()["%FUNC"]=Symbol(SB_LABEL,"",((node_Type*)son[0])->varType,(node*)this);	// which function we are in
 	err|=((node_FormalParams*)son[2])->add_formal_params();		// formal parameters
@@ -138,28 +146,47 @@ string node_Type::get_type_info() {
 
 string node_Statements::get_type_info() {return "Statements";}
 
-bool isControlFlow(node_Statement *x) {
+bool isControlFlow(node *x) {
 	return (!x->son.empty() && (x->son[0]->nodeType==IFSTMT || x->son[0]->nodeType==FORSTMT));
 }
 
 bool node_Statements::generate_3addr_code() {
 	bool err=0;
 	symbolTab.push_back(SymbolTabType());		// local label
-	string lastEOCF="";
-	// stack<node*> S;
 	for(int i=0; i<son.size(); i++) {
 		node_Statement *x=(node_Statement*)son[i];
-		bool setNewEOCF=(isControlFlow(x) && i+1<son.size());
-		if (setNewEOCF) symbolTab.back()["%EOCF"]=Symbol(SB_LABEL,"EOCF_"+to_string(EOCFCnt++));
-		err|=x->generate_3addr_code();		// each statement
-		if (!x->codes.empty()) {
-			if (lastEOCF!="") x->codes[0].first.insert(0,lastEOCF+": ");
-			if (setNewEOCF) lastEOCF=symbolTab.back()["%EOCF"].label; else {
-				lastEOCF="";
-				symbolTab.back().erase("%EOCF");
+		if (isControlFlow(x)) {
+			// for continuous control flows, generate codes in reverse order,
+			// to avoid bugs of EOCF label with empty statement
+			vector<node*> CFlist;
+			int j=i;							// i: the first CF;   j: after the last CF
+			for(; ; j++) {
+				for(; j<son.size() && isControlFlow(son[j]); j++) CFlist.push_back(son[j]);
+				if (j>=son.size()) break;
+				err|=son[j]->generate_3addr_code();
+				if (!son[j]->codes.empty()) break;
 			}
+			if (j<son.size()) {
+				string eocf="EOCF_"+to_string(EOCFCnt++);
+				symbolTab.back()["%EOCF"]=Symbol(SB_LABEL,eocf);
+				son[j]->codes[0].first.insert(0,eocf+": ");
+			}
+			for(int k=CFlist.size()-1; k>=0; k--) {
+				err|=CFlist[k]->generate_3addr_code();
+				if (k>i) {
+					string eocf="EOCF_"+to_string(EOCFCnt++);
+					symbolTab.back()["%EOCF"]=Symbol(SB_LABEL,eocf);
+					CFlist[k]->codes[0].first.insert(0,eocf+": ");
+				}
+			}
+			symbolTab.back().erase("%EOCF");
+			for(; i<=j; i++) if (i<son.size()) add_codes(codes,son[i]->codes);
+			i--;
+		} else {
+			err|=x->generate_3addr_code();		// each statement
+			add_codes(codes,x->codes);
 		}
-		add_codes(codes,x->codes);
+		
 	}
 	symbolTab.pop_back();
 	return err;
@@ -285,7 +312,7 @@ bool node_ForStmt::generate_3addr_code() {
 	symbolTab.pop_back();
 	add_codes(forCodes,son[3]->codes);
 	
-	err|=son[2]->generate_3addr_code();		// after loop
+	err|=son[2]->generate_3addr_code();			// after loop
 	add_codes(forCodes,son[2]->codes);
 	string loopLabel="loop_"+to_string(loopCnt++);
 	forCodes.push_back(make_pair("","goto "+loopLabel));
@@ -334,8 +361,8 @@ string node_Expression::get_type_info() {
 	string bas="Expression: "+rvOperatorType[op];
 	if (op==OP_GET_VALUE) {
 		switch (varType) {
-			case V_INT : return bas+to_string(data.d_int);
-			case V_REAL : return bas+to_string(data.d_float);
+			case V_INT : return bas+" "+to_string(data.d_int);
+			case V_REAL : return bas+" "+to_string(data.d_float);
 		}
 	} else {
 		return bas;
@@ -352,8 +379,8 @@ bool node_Expression::generate_3addr_code() {
 		if (op<=OP_LE) {				// binary operation
 			node_Expression *left=(node_Expression*)son[0], *right=(node_Expression*)son[1];
 			varType=max(left->varType,right->varType);		// type check
-			if (left->varType<varType) codes.push_back(make_pair("",left->resultLabel+" = ("+rvVarType[varType]+") "+left->resultLabel));
-			if (right->varType<varType) codes.push_back(make_pair("",right->resultLabel+" = ("+rvVarType[varType]+") "+right->resultLabel));
+			left->resultLabel=type_conversion(left->varType,varType,left->resultLabel,codes);
+			right->resultLabel=type_conversion(right->varType,varType,right->resultLabel,codes);
 			resultLabel="%t_"+to_string(varCnt++);
 			codes.push_back(make_pair("",resultLabel+" = "+left->resultLabel+" "+rvOperatorType[op]+" "+right->resultLabel));
 			if (op>=OP_EQUAL) varType=V_BOOL;	// logic result
@@ -364,14 +391,9 @@ bool node_Expression::generate_3addr_code() {
 			varType=s->varType;
 		}
 	} else if (op==OP_GET_VALUE) {
-		resultLabel="%t_"+to_string(varCnt++);
 		switch (varType) {
-			case V_INT :
-				codes.push_back(make_pair("",resultLabel+" = "+to_string(data.d_int)));
-				break;
-			case V_REAL :
-				codes.push_back(make_pair("",resultLabel+" = "+to_string(data.d_float)));
-				break;
+			case V_INT : resultLabel=to_string(data.d_int); break;
+			case V_REAL : resultLabel=to_string(data.d_float); break;
 		}
 	} else if (op==OP_GET_VAR) {
 		string &varName=((node_Id*)son[0])->name;
@@ -416,8 +438,7 @@ bool node_ActualParams::generate_3addr_code(Symbol func) {
 	for(int i=0; i<params.size(); i++)
 		if (i>=formalParams->son.size()) semantic_error("unexpected actual parameter") else {
 			Var_t formalParamType=((node_Type*)((formalParams->son[i])->son[0]))->varType;
-			if (params[i]->varType!=formalParamType)
-				codes.push_back(make_pair("",params[i]->resultLabel+" = ("+rvVarType[formalParamType]+") "+params[i]->resultLabel));
+			params[i]->resultLabel=type_conversion(params[i]->varType,formalParamType,params[i]->resultLabel,codes);
 			codes.push_back(make_pair("","param "+params[i]->resultLabel));
 		}
 	return err;

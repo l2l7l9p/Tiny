@@ -84,8 +84,8 @@ class node{
 	va_list ap;							// used for passing arguments to node's constructor
 	Codes codes;						// three address codes. 
 	
-	static vector<SymbolTabType> symbolTab;	// symbol table. It is a stack
-	static int EOCFCnt, elseCnt, loopCnt, varCnt;			// label count
+	static vector<SymbolTabType> symbolTab;			// symbol table. It is a stack
+	static int EOCFCnt, elseCnt, loopCnt, varCnt;	// label count. EOCF: end of control flow
 	static string mainFuncLabel;
 	
 	node(Node_t nt,int sonNum) {
