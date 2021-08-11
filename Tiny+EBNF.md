@@ -1,4 +1,4 @@
-Original definition of Tiny is in https://jlu.myweb.cs.uwindsor.ca/214/language.htm, where you can find some definition of tokens such as `Id` and `QString`.
+Original definition of Tiny is on https://jlu.myweb.cs.uwindsor.ca/214/language.htm, where you can find definition of some tokens such as `IdString`(`Identifier` on that page), `QString`, `Integer` and `Float`.
 
 ```
 • Program ::= {MethodDecl}
@@ -18,6 +18,6 @@ Original definition of Tiny is in https://jlu.myweb.cs.uwindsor.ca/214/language.
 • IfStmt ::= 'IF', '(', Expression, ')', Statement, ['ELSE', Statement]
 • ForStmt ::= 'FOR', '(', SimpleStmt, Expression, ';', SimpleStmt, ')', Statement
 • Expression ::= PrimExpr | (Expression, ('+' | '-' | '*' | '/' | '==' | '!=' | '<' | '<='), Expression) | ('-', Expression)
-• PrimExpr ::= Number Integer | Number Float | Id | (Id, '(', ActualParams, ')') | ('(', Expression, ')')
+• PrimExpr ::= Integer | Float | Id | (Id, '(', ActualParams, ')') | ('(', Expression, ')')
 • ActualParams ::= [Expression, {',', Expression}]
 ```
