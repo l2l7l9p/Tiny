@@ -8,7 +8,7 @@ extern int yylineno, yynerrs;
 void yyerror(const char* s);
 
 node *root;
-int lastyylineno=0;
+int lastyynerrs=0;
 %}
 
 %define api.value.type union
@@ -46,8 +46,8 @@ int lastyylineno=0;
 
 %destructor{} <int> <double> <char*>
 %destructor{
-	if (yynerrs!=lastyylineno) clear($$);
-	lastyylineno=yynerrs;
+	if (yynerrs!=lastyynerrs) clear($$);
+	lastyynerrs=yynerrs;
 } <*>
 
 %%

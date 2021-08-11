@@ -73,6 +73,7 @@ string node_MethodDecls::get_type_info() {return "MethodDecls";}
 
 bool node_MethodDecls::generate_3addr_code() {
 	bool err=0;
+	// add function names to symbol table, and find 'main'
 	for(auto xp:son) {
 		node_MethodDecl *x=(node_MethodDecl*)xp;
 		string &funcName=((node_Id*)(x->son[1]))->name;
@@ -84,9 +85,10 @@ bool node_MethodDecls::generate_3addr_code() {
 	}
 	if (mainFuncLabel=="NO") semantic_error("no main function");
 	
-	for(auto xp:son) {
+	for(auto xp:son) {		// enumerate each method
+		// each method generates its codes and add to this->codes
 		node_MethodDecl *x=(node_MethodDecl*)xp;
-		err|=x->generate_3addr_code();		// each method
+		err|=x->generate_3addr_code();
 		add_codes(codes,x->codes);
 	}
 	return err;
