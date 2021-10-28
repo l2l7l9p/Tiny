@@ -6,6 +6,10 @@ A simple compiler for language Tiny+
 
 see `Tiny+EBNF.md`
 
+### build
+
+Firstly install Flex and Bison, then run `make`.
+
 ### Usage
 
 ```
